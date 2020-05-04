@@ -1,0 +1,10 @@
+server:
+  port: 8082
+
+dubbo:
+  application:
+    name: msa-user-consumer
+  registry:
+    address: zookeeper://localhost:2184   # 注册中心地址
+  monitor:
+    protocol: registry                    # 通过注册中心发现监控中心

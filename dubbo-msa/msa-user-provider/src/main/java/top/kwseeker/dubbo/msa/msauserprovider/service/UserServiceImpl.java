@@ -38,7 +38,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private volatile Object count;
-    //双重检测机制解决Redis热点缓存问题
+    //双重检测机制防止高并发场景缓存穿透
     @Override
     public Integer findUserCount() {
         BoundValueOperations<Object, Object> ops = redisTemplate.boundValueOps("count");

@@ -11,7 +11,8 @@ import top.kwseeker.dubbo.msa.common.service.UserService;
 @RequestMapping("/user")
 public class UserController {
 
-    @Reference   // Dubbo的注解   <dubbo:reference />
+    //关闭服务检查，当服务provider还未启动时，consumer仍然可以成功启动
+    @Reference(check = false)           //@Reference 对应 <dubbo:reference>标签
     private UserService userService;
 
     @PostMapping("/register")

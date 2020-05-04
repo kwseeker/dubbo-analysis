@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xmlns:mvc="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <dubbo:application name="web-consumer"/>
+    <!--指定服务注册中心：zk单机-->
+    <!--<dubbo:registry address="zookeeper://localhost:2184?backup=localhost:2185,localhost:2186"/>-->
+    <dubbo:registry address="zookeeper://localhost:2184"/>
+    <!--订阅服务-->
+    <dubbo:reference id="someService" interface="top.kwseeker.dubbo.web.api.SomeService"/>
+    <!--注册处理器-->
+    <mvc:component-scan base-package="top.kwseeker.dubbo.web.consumer.controller"/>
+</beans>

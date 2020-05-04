@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+
+    <!--应用注册到注册中心的名字-->
+    <dubbo:application name="web-provider"/>
+    <!--指定注册中心-->
+    <!--<dubbo:registry address="zookeeper://localhost:2184?backup=localhost:2185,localhost:2186"/>-->
+    <dubbo:registry address="zookeeper://localhost:2184"/>
+    <!--服务提供者bean实例-->
+    <bean id="someService" class="top.kwseeker.dubbo.web.provider.service.SomeServiceImpl"/>
+    <!--将服务提供者通过接口暴露-->
+    <dubbo:service interface="top.kwseeker.dubbo.web.api.SomeService" ref="someService"/>
+
+</beans>

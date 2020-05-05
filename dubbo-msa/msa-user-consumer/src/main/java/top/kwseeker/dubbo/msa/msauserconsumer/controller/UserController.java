@@ -1,5 +1,6 @@
 package top.kwseeker.dubbo.msa.msauserconsumer.controller;
 
+import org.apache.dubbo.config.annotation.Method;
 import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,7 +17,10 @@ public class UserController {
     //@Reference(check = false)           //@Reference 对应 <dubbo:reference>标签
     @Reference(check = false, version = "0.0.2")
     private UserService userService;
-    @Reference(check = false, group = "bizService.normal")
+    @Reference(check = false, group = "bizService.normal"
+            , loadbalance = "roundrobin"
+            , methods = {@Method(name="bizServe", loadbalance = "leastactive")}     //注意＠Reference methods赋值方式
+    )
     private BizService bizService;
 
     @PostMapping("/register")

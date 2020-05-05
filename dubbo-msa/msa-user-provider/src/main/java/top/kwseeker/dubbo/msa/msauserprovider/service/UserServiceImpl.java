@@ -4,6 +4,7 @@ import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Scope;
 import org.springframework.data.redis.core.BoundValueOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -14,8 +15,10 @@ import top.kwseeker.dubbo.msa.msauserprovider.dao.UserDao;
 
 import java.util.concurrent.TimeUnit;
 
-@Service
-@Component
+//下面的写法创建两个不同版本的Bean并没有效果
+//@Service(version = "0.0.1")
+//@Scope("prototype")
+//@Component("oldUserService")
 public class UserServiceImpl implements UserService {
 
     @Autowired

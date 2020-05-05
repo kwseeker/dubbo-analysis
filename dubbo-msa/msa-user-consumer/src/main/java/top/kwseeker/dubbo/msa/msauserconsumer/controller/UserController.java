@@ -16,7 +16,7 @@ public class UserController {
     //@Reference(check = false)           //@Reference 对应 <dubbo:reference>标签
     @Reference(check = false, version = "0.0.2")
     private UserService userService;
-    @Reference(check = false, group = "bizService.vip")
+    @Reference(check = false, group = "bizService.normal")
     private BizService bizService;
 
     @PostMapping("/register")
@@ -38,7 +38,7 @@ public class UserController {
         return userService.findUserCount();
     }
 
-    @RequestMapping("bizServe")
+    @RequestMapping("/bizServe")
     @ResponseBody
     public String bizServe() {
         bizService.bizServe();

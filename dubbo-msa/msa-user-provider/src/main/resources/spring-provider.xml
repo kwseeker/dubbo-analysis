@@ -15,7 +15,7 @@
     <bean id="normalBizService" class="top.kwseeker.dubbo.msa.msauserprovider.service.NormalBizServiceImpl"/>
     <bean id="vipBizService" class="top.kwseeker.dubbo.msa.msauserprovider.service.VipBizServiceImpl"/>
     <dubbo:service interface="top.kwseeker.dubbo.msa.common.service.BizService"
-                   ref="normalBizService" group="bizService.normal"/>
+                   ref="normalBizService" group="bizService.normal" protocol="dubbo,rmi"/>
     <dubbo:service interface="top.kwseeker.dubbo.msa.common.service.BizService"
                    ref="vipBizService" group="bizService.vip"/>
 </beans>

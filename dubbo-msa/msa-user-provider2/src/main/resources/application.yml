@@ -1,0 +1,20 @@
+server:
+  port: 8083
+
+dubbo:
+  application:
+    name: msa-user-provider2               #dubbo应用的名称
+  registry:
+    address: zookeeper://localhost:2184   #注册中心的地址
+  monitor:
+    protocol: registry                    #通过注册中心发现监控中心
+  protocols:
+    dubbo:
+      name: dubbo
+      port: 20881
+    rmi:
+      name: rmi
+      port: 1100
+#    rest:
+#      name: rest
+#      port: 8889

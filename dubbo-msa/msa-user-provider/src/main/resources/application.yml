@@ -29,7 +29,6 @@ mybatis:
   type-aliases-package: top.kwseeker.dubbo.msa.common.entity
   # 注册映射文件
   mapper-locations: classpath:top/kwseeker/dubbo/msa/msauserprovider/dao/*.xml
-
 dubbo:
   application:
     name: msa-user-provider               #dubbo应用的名称
@@ -38,3 +37,13 @@ dubbo:
     #registry: zookeeper://zkOS1:2181?backup=zkOS2:2181,zkOS3:2181
   monitor:
     protocol: registry                    #通过注册中心发现监控中心
+  protocols:
+    dubbo:
+      name: dubbo
+      port: 20880
+    rmi:
+      name: rmi
+      port: 1099
+#    rest:
+#      name: rest
+#      port: 8888

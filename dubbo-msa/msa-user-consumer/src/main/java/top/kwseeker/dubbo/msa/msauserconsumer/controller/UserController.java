@@ -5,6 +5,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import top.kwseeker.dubbo.msa.common.entity.User;
+import top.kwseeker.dubbo.msa.common.service.BizService;
 import top.kwseeker.dubbo.msa.common.service.UserService;
 
 @Controller
@@ -15,6 +16,8 @@ public class UserController {
     //@Reference(check = false)           //@Reference 对应 <dubbo:reference>标签
     @Reference(check = false, version = "0.0.2")
     private UserService userService;
+    @Reference(check = false, group = "bizService.vip")
+    private BizService bizService;
 
     @PostMapping("/register")
     public String someHandle(User user, Model model) {
@@ -33,5 +36,12 @@ public class UserController {
     @ResponseBody
     public Integer countHandle() {
         return userService.findUserCount();
+    }
+
+    @RequestMapping("bizServe")
+    @ResponseBody
+    public String bizServe() {
+        bizService.bizServe();
+        return "done";
     }
 }

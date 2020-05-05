@@ -6,11 +6,16 @@
     <!--注册Service实现类-->
     <bean id="oldService" class="top.kwseeker.dubbo.msa.msauserprovider.service.UserServiceImpl"/>
     <bean id="newService" class="top.kwseeker.dubbo.msa.msauserprovider.service.UserServiceTestImpl"/>
-
     <!--暴露服务-->
     <dubbo:service interface="top.kwseeker.dubbo.msa.common.service.UserService"
                    ref="oldService" version="0.0.1"/>
     <dubbo:service interface="top.kwseeker.dubbo.msa.common.service.UserService"
                    ref="newService" version="0.0.2"/>
 
+    <bean id="normalBizService" class="top.kwseeker.dubbo.msa.msauserprovider.service.NormalBizServiceImpl"/>
+    <bean id="vipBizService" class="top.kwseeker.dubbo.msa.msauserprovider.service.VipBizServiceImpl"/>
+    <dubbo:service interface="top.kwseeker.dubbo.msa.common.service.BizService"
+                   ref="normalBizService" group="bizService.normal"/>
+    <dubbo:service interface="top.kwseeker.dubbo.msa.common.service.BizService"
+                   ref="vipBizService" group="bizService.vip"/>
 </beans>

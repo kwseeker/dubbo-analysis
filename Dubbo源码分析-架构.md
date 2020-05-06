@@ -20,6 +20,8 @@
 
 + **微内核+插件**
 
+  方便用户自定义拓展功能。
+
 + **采用URL作为配置信息的统一格式**
 
 ### 三大领域模型
@@ -34,64 +36,78 @@
 
 ### 四大组件
 
-+ Registry
++ **Registry**
 
-+ Consumer
++ **Consumer**
 
-+ Provider
++ **Provider**
 
-+ Monitor
++ **Monitor**
 
 
-### 十层架构
+### 十层架构(重要)
 
 ![](https://dubbo.apache.org/docs/zh-cn/dev/sources/images/dubbo-framework.jpg)
 
-#### Service 
+#### Bussiness
 
-+ **Interface**
++ **Service** 
 
-  业务服务接口
+  对应示例代码中公共模块中定义的Interface接口和Provider中定义的接口实现类。
 
-+ **Implement**
+  + **Interface**
 
-  业务服务实现类
+    业务服务接口
 
-#### Config
+  + **Implement**
 
+    业务服务实现类
 
+#### RPC
 
-#### Proxy
++ **Config**
 
+  对应xml中的`dubbo:application`、`dubbo:service`、`dubbo:reference`、`dubbo:registry`等配置。基础篇中提到上面的标签都对应着一个XxxConfig类。这个Config就是指的这些实现类。
 
+  上图中只列举了其中两个Config类：ReferenceConfig和ServiceConfig；其实还有十多个。
 
-#### Registry
++ **Proxy**
 
+  之前了解RPC框架的实现其实原理都类似，包括SpringCloud Feign，消费者都是生成代理类，代理类方法和远程服务接口方法相同，内部实现则是依赖TCP\HTTP通信框架将请求方法参数发送给远程，远程收到请求方法和参数，调用本地方法获取结果，然后将结果通过TCP\HTTP通信框架发送回去。消费者端接收到请求后再将结果反序列化成结果对象。
 
+  Proxy就是消费者端的代理层。图中Proxy节点是消费者端的代理对象，Invoker是提供者端的代理对象。
 
-#### Cluster
+  TODO: 源码分析Proxy和Invoker的区别？不妨根据使用经验大胆猜测Proxy是消费者端向Provider发送远程调用的代理对象，而Invoker是Provider异步返回结果时调用回调方法的接口抽象？
 
++ **Registry**
 
+  注册中心，实现服务注册与发现。
 
-#### Monitor
++ **Cluster**
 
+  实现分布式方面控制，包括服务路由、降级、限流、容错、负载均衡等实现。
 
++ **Monitor**
 
-#### Protocol
+  一个用于监控的独立的服务
 
++ **Protocol**
 
+  封装RPC调用，Dubbo支持８种RPC通信协议。图中表示默认的Dubbo通信协议。
 
-#### Exchange
+#### Remoting
 
++ **Exchange**
 
+  封装请求响应模式，**同步转异步**，以 `Request`, `Response` 为中心，扩展接口为 `Exchanger`, `ExchangeChannel`, `ExchangeClient`, `ExchangeServer`
 
-#### Transport
++ **Transport**
 
+  RPC调用网络传输实现，默认是Netty实现，还支持Mina。
 
++ **Serialize**
 
-#### Serialize
-
-
+  网络传输过程中将对象数据转为流数据的序列化方法实现。
 
 ### 源码结构
 
@@ -123,7 +139,7 @@ dubbo-dubbo-2.7.3/
 │   ├── dubbo-config-api
 │   ├── dubbo-config-spring
 │   └── pom.xml
-├── dubbo-configcenter
+├── dubbo-configcenter				//dubbo支持的配置中心实现
 │   ├── dubbo-configcenter-api
 │   ├── dubbo-configcenter-apollo
 │   ├── dubbo-configcenter-consul
@@ -157,7 +173,7 @@ dubbo-dubbo-2.7.3/
 │   ├── dubbo-filter-validation
 │   └── pom.xml
 ├── dubbo-metadata-report
-│   ├── dubbo-metadata-definition
+│   ├── dubbo-metadata-definition			//服务注册与发现服务节点定义
 │   ├── dubbo-metadata-definition-protobuf
 │   ├── dubbo-metadata-report-api
 │   ├── dubbo-metadata-report-consul
@@ -171,7 +187,7 @@ dubbo-dubbo-2.7.3/
 │   ├── dubbo-monitor-default
 │   └── pom.xml
 ├── dubbo-plugin
-│   ├── dubbo-qos
+│   ├── dubbo-qos							//服务质量和管控平台通信
 │   └── pom.xml
 ├── dubbo-registry
 │   ├── dubbo-registry-api
@@ -240,17 +256,44 @@ dubbo-dubbo-2.7.3/
 
 
 
-### 源码调试入口
+### 源码调试
+
+以2.7.3版本分析。
 
 
 
 ## Dubbo内核实现机制
 
+Dubbo所有功能都是基于Dubbo内核构建起来的，Dubbo内核包括SPI、AOP、IoC、Compiler。
+
+其中SPI是Dubbo内核的核心。
+
 ### SPI
 
 之前在Feign（Feign源码解析中有使用demo）、Java NIO（Selector接口在不同系统有不同的实现，而且需要在运行时通过分析系统类型进行选择加载系统对应实现类）和JDBC中遇到过，但是没有研究过SPI实现机制，这里又出现了，所以这次还是把它的原理搞清楚，便于后续代码理解，JDK SPI分析另起一个Markdown分析，《JDK SPI.md》。
 
-针对JDK SPI的使用缺陷，Dubbo对SPI做了优化。使用key-value的方式列举实现类，加载并实例时通过key指定要加载并实例化的实现类，而不是像JDK SPI标准用法那样逐个加载实例化。
+#### JDK SPI 使用
+
+示例代码：`dubbo-analysis/dubbo-src-analysis/jdk-spi`
+
+还是以JDBC为例，JDK只是定义了java.sql.Driver的接口规范，但是没有实现，而具体的实现由各个数据库方案商提供（spi-common），用户（jdk-spi）通过JDK SPI机制引入依赖，让后通过`ServiceLoader$load()`加载各种实现，并遍历获取各种Driver接口实现。
+
+#### Dubbo SPI 使用
+
+示例代码：`dubbo-analysis/dubbo-src-analysis/kernel-spi`
+
+**针对JDK SPI的使用缺陷，Dubbo对SPI做了优化。使用key-value的方式列举实现类，加载并实例时通过key指定要加载并实例化的实现类，而不是像JDK SPI标准用法那样遍历逐个加载实例化。**
+
+**Dubbo 的 SPI 规范**:
+１）接口名:可以随意定义
+２）实现类名:在接口名前添加一个用于表示自身功能的“标识前辍”字符串（这个标识用于表示接口实现的别名）
+３）提供者配置文件路径:在依次查找的目录为
+		META-INF/dubbo/internal
+		META-INF/dubbo
+		META-INF/services
+４）提供者配置文件名称:接口的全限定性类名,无需扩展名
+５）提供者配置文件内容:文件的内容为 key=value 形式,value 为该接口的实现类的全限类性类名,key 可以随意,但一般为该实现类的“标识前辍”(首字母小写)。一个类名占一行。
+６）提供者加载:ExtensionLoader 类相当于 JDK SPI 中的 ServiceLoader 类,用于加载提供者配置文件中所有的实现类,并创建相应的实例。
 
 接口里面可以通过@SPI指定默认加载的实现类，某个实现类的key可以有多个。
 
@@ -361,13 +404,13 @@ spring=org.apache.dubbo.config.spring.extension.SpringExtensionFactory
 
 + SpringExtensionFactory
 
+  
+
 #### java.net.URL
 
 
 
-
-
-#### Adaptive机制
+### Adaptive机制
 
 + @Adaptive注解修饰类
 

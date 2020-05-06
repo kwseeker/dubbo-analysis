@@ -1,0 +1,2 @@
+mysql=top.kwseeker.dubbo.src.spi.MySQLDriver
+oracle, Oracle=top.kwseeker.dubbo.src.spi.OracleDriver

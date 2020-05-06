@@ -264,9 +264,9 @@ dubbo-dubbo-2.7.3/
 
 ## Dubbo内核实现机制
 
-Dubbo所有功能都是基于Dubbo内核构建起来的，Dubbo内核包括SPI、AOP、IoC、Compiler。
+**Dubbo所有功能都是基于Dubbo内核构建起来的，Dubbo内核包括SPI、AOP、IoC、Compiler。**
 
-其中SPI是Dubbo内核的核心。
+其中SPI是Dubbo内核的核心，内核其他部分则是通过SPI实现的。
 
 ### SPI
 
@@ -282,7 +282,7 @@ Dubbo所有功能都是基于Dubbo内核构建起来的，Dubbo内核包括SPI�
 
 示例代码：`dubbo-analysis/dubbo-src-analysis/kernel-spi`
 
-**针对JDK SPI的使用缺陷，Dubbo对SPI做了优化。使用key-value的方式列举实现类，加载并实例时通过key指定要加载并实例化的实现类，而不是像JDK SPI标准用法那样遍历逐个加载实例化。**
+**针对JDK SPI的使用缺陷(会全部加载实例化)，Dubbo对SPI做了优化。使用key-value的方式列举实现类，加载并实例时通过key指定要加载并实例化的实现类，而不是像JDK SPI标准用法那样遍历逐个加载实例化。**
 
 **Dubbo 的 SPI 规范**:
 １）接口名:可以随意定义
@@ -298,172 +298,35 @@ Dubbo所有功能都是基于Dubbo内核构建起来的，Dubbo内核包括SPI�
 接口里面可以通过@SPI指定默认加载的实现类，某个实现类的key可以有多个。
 
 ```java
-@SPI("wechat")
-public interface Order {
-    String way();
+@SPI("Oracle")              //指定默认的Driver实现类,这个注解是必须加的
+public interface Driver {
+  ...
 }
 ```
 
 实现类列表配置
 
 ```txt
-//META-INF/dubbo/internal/com.abc.spi.Order
-alipay=com.abc.spi.extension.AlipayOrder
-wechat, wechat2=com.abc.spi.extension.WeChatOrder
+//META-INF/dubbo/internal/top.kwseeker.dubbo.src.spi.Driver
+mysql=top.kwseeker.dubbo.src.spi.MySQLDriver
+oracle, Oracle=top.kwseeker.dubbo.src.spi.OracleDriver
 ```
 
 使用
 
 ```java
 // 获取SPI接口Order的扩展加载实例
-// 1）检查入参class是否为Interface，是否有加@SPI注解
-ExtensionLoader<Order> loader = ExtensionLoader.getExtensionLoader(Order.class);
-// 获取指定名称的扩展类
-Order alipay = loader.getExtension("alipay");
-System.out.println(alipay.way());
-Order wechat = loader.getExtension("wechat");
-System.out.println(wechat.way());
-Order wechat2 = loader.getExtension("wechat2");
-System.out.println(wechat2.way());
-// 不指定名称，加载默认拓展类（使用Adaptive机制）
-
+// 检查入参class是否为Interface，是否有加@SPI注解
+ExtensionLoader<Driver> loader = ExtensionLoader.getExtensionLoader(Driver.class);
+// 使用key加载对应的实现类
+Driver mysqlDriver = loader.getExtension("mysql");
+mysqlDriver.connect("", null);
+Driver oracleDriver = loader.getExtension("oracle");
+oracleDriver.connect("", null);
+// 使用＠SPI默认指定的实现类
+Driver driver = loader.getExtension("true");	//true表示使用＠SPI指定的实现类
+driver.connect("", null);
 ```
-
-#### Dubbo SPI处理原理
-
-```
-adaptive=org.apache.dubbo.common.extension.factory.AdaptiveExtensionFactory
-spi=org.apache.dubbo.common.extension.factory.SpiExtensionFactory
-spring=org.apache.dubbo.config.spring.extension.SpringExtensionFactory
-```
-
-+ **ExtensionLoader**
-
-  ExtensionLoader 用于动态加载接口实现。Dubbo会为每一种接口创建一个ExtensionLoader实例，这个实例就专门负责选择性加载这个接口的所有实现类，所有ExtensionLoader实例会被存储到EXTENSION_LOADERS静态变量容器中。
-
-  **ExtensionLoader加载接口实现分为两个阶段**：
-
-  **阶段一**：（加载ExtensionFactory实现）
-
-  先加载ExtensionFactory接口实现类（其实现类默认有SpiExtensionFactory和SpringExtensionFactory，用于引入Dubbo SPI 和 Spring对Bean的管理，加载的实现类会被缓存到ExtensionFactory为type创建的ExtensionLoader中，详细见下面说明），然后将这两个工厂提供给用户用于加载业务接口实现。
-
-  1）首先去EXTENSION_LOADERS中查询ExtensionFactory类型的ExtensionLoader是否存在，不存在则创建然后加载并实例化ExtensionFactory的实现类。
-
-  > ExtensionFactory实现类来源(依赖包或项目resources下)
-  >
-  > /META-INF/dubbo/internal/<接口名全路径> 
-  >
-  > /META-INF/dubbo/<接口名全路径>
-  >
-  > /META-INF/services/<接口名全路径>
-  >
-  > 如："META-INF/dubbo/internal/org.apache.dubbo.common.extension.ExtensionFactory"，
-  >
-  > "META-INF/dubbo/internal/com.alibaba.dubbo.common.extension.ExtensionFactory"（只是为了兼容旧版本dubbo）。
-
-  **ExtensionLoader成员变量**
-
-  ```java
-//表示此ExtensionLoader实例负责加载哪个接口的实现类
-  type = {Class@1116} "interface org.apache.dubbo.common.extension.ExtensionFactory"
-  //
-  objectFactory = null
-  //缓存加载过的实现类的名称
-  cachedNames = {ConcurrentHashMap@1125}  size = 2
-   {Class@1356} "class org.apache.dubbo.common.extension.factory.SpiExtensionFactory" -> "spi"
-   {Class@1378} "class org.apache.dubbo.config.spring.extension.SpringExtensionFactory" -> "spring"
-  //缓存加载过的实现类的Class
-  cachedClasses = {Holder@1126} 
-   value = {HashMap@1226}  size = 2
-    "spring" -> {Class@1378} "class org.apache.dubbo.config.spring.extension.SpringExtensionFactory"
-    "spi" -> {Class@1356} "class org.apache.dubbo.common.extension.factory.SpiExtensionFactory"
-  //
-  cachedActivates = {ConcurrentHashMap@1127}  size = 0
-  //缓存实例化的实现类的实例
-  cachedInstances = {ConcurrentHashMap@1128}  size = 2
-   "spring" -> {Holder@1688} 
-   "spi" -> {Holder@1770} 
-  //缓存@Adaptive注释的实现类的实例
-  cachedAdaptiveInstance = {Holder@1129} 
-   value = {AdaptiveExtensionFactory@1469} 
-  //缓存@Adaptive注释的实现类Class
-  cachedAdaptiveClass = {Class@1343} "class org.apache.dubbo.common.extension.factory.AdaptiveExtensionFactory"
-  cachedDefaultName = null
-  createAdaptiveInstanceError = null
-  cachedWrapperClasses = null
-  exceptions = {ConcurrentHashMap@1130}  size = 0
-  ```
-  
-- **AdaptiveExtensionFactory**
-  
-  
-  
-+ ExtensionFactory
-
-+ SpiExtensionFactory
-
-+ SpringExtensionFactory
-
-  
-
-#### java.net.URL
-
-
-
-### Adaptive机制
-
-+ @Adaptive注解修饰类
-
-  被@Adapative 修饰的 SPI 接口扩展类称为 Adaptive 类,表示该 SPI 扩展类会按照该类中指定的方式获取,即用于固定实现方式。其是装饰者设计模式的应用。
-
-  参考 org.apache.dubbo.common.extension.factory.AdaptiveExtensionFactory, org.apache.dubbo.common.compiler.support.AdaptiveCompiler 类的处理。
-
-  
-
-+ @Adaptive注解修饰方法
-
-  被@Adapative 修饰 SPI 接口中的方法称为 Adaptive 方法。在 SPI 扩展类中若没有找到Adaptive 类,但系统却发现了 Adapative 方法,就会根据 Adaptive 方法自动为该 SPI 接口动态生成一个 Adaptive 扩展类,并自动将其编译。例如 Protocol 接口中就包含两个 Adaptive方法。
-
-  参考 org.apache.dubbo.rpc.Protocol
-
-  ```
-  @Adaptive
-  <T> Exporter<T> export(Invoker<T> invoker) throws RpcException;
-  @Adaptive
-  <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException;
-  ```
-
-
-
-+ @Adaptive注解解析
-
-  
-
-#### Javaassist
-
-能运行时动态生成、修改Class。
-
-```java
-// ClassPool包含所有动态生成的类，getDefault()返回默认的ClassPool，
-ClassPool cp = ClassPool.getDefault();
-// 动态生成一个类
-CtClass gclazz = cp.makeClass("org.jamee.demo.javaassist.GeneratedClass");
-CtMethod gmethod = CtMethod
-.make("public void sayHello() { System.out.println(\"Hello Javaassist\"); }", gclazz);
-gclazz.addMethod(gmethod);
-// 转换成Class
-Class<?> gc = gclazz.toClass();
-// 将该CtClass从ClassPool中移除，
-gclazz.detach();
-// 调用方法
-Object ginst = gc.newInstance();
-Method gm = gc.getMethod("sayHello");
-gm.invoke(ginst);
-```
-
-TODO：和JDK、Cglib的动态代理使用和实现过程比较一下(看看是不是把JDK那个动态生成代理类的过程封装成了javaassist)。
-
-
 
 ### AOP
 

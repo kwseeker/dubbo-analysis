@@ -1,0 +1,3 @@
+mysql=top.kwseeker.dubbo.src.adaptive.MySQLDriver
+oracle, Oracle=top.kwseeker.dubbo.src.adaptive.OracleDriver
+adaptive=top.kwseeker.dubbo.src.adaptive.AdaptiveDriver

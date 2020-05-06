@@ -16,6 +16,9 @@
         <module>kernel-spi</module>
         <module>jdk-spi</module>
         <module>spi-common</module>
+        <module>kernel-adaptiveclass</module>
+        <module>kernel-adaptivemethod</module>
+        <module>dubbo-debug</module>
     </modules>
 
 
